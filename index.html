@@ -22,13 +22,6 @@ header h1{font-size:20px;font-weight:700}
 .month-nav button:active{background:rgba(255,255,255,.3)}
 #month-label{font-size:15px;min-width:90px;text-align:center}
 
-/* ─── セットアップバナー ─── */
-#setup-banner{margin:14px 14px 0;border-radius:var(--radius);padding:16px 18px;background:linear-gradient(135deg,#1a1a2e,#2c3e6e);color:#fff;display:none}
-.banner-title{font-size:16px;font-weight:700;margin-bottom:6px}
-.banner-steps{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
-.banner-step{background:rgba(255,255,255,.15);border-radius:20px;padding:6px 14px;font-size:13px;display:flex;align-items:center;gap:6px}
-.banner-step.done{background:var(--green);opacity:.9}
-.banner-step.active{background:rgba(255,255,255,.3);outline:2px solid rgba(255,255,255,.6)}
 
 /* ─── 1日あたりカード（ヒーロー） ─── */
 #daily-card{margin:14px 14px 0;border-radius:var(--radius);padding:22px 20px 18px;color:#fff;transition:background .4s}
@@ -143,20 +136,13 @@ header h1{font-size:20px;font-weight:700}
 <body>
 
 <header>
-  <h1>📒 かけいぼ <span style="font-size:11px;opacity:.5;font-weight:400">v2.2</span></h1>
+  <h1>📒 かけいぼ <span style="font-size:11px;opacity:.5;font-weight:400">v2.3</span></h1>
   <div class="month-nav">
     <button id="prev-month">‹</button>
     <span id="month-label"></span>
     <button id="next-month">›</button>
   </div>
 </header>
-
-<!-- セットアップガイド -->
-<div id="setup-banner">
-  <div class="banner-title">👋 はじめに金額を設定しましょう</div>
-  <div style="font-size:13px;opacity:.85">下の「変更」ボタンをタップして入力してください</div>
-  <div class="banner-steps" id="banner-steps"></div>
-</div>
 
 <!-- 1日あたりカード -->
 <div id="daily-card" class="good">
@@ -379,32 +365,23 @@ function calcPrevMonth(){
 // ══════════════════════════════════════
 // レンダリング
 // ══════════════════════════════════════
+function showToast(msg){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';
+    t.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:12px 24px;border-radius:30px;font-size:15px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none';
+    document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._tid);t._tid=setTimeout(()=>t.style.opacity='0',2000);
+}
+
 function renderAll(){
-  renderSetupBanner();
-  renderDailyCard();
-  renderSummary();
-  renderFixed();
-  renderCats();
-  renderHistory();
+  try{ renderDailyCard(); }catch(e){ console.error('renderDailyCard',e); }
+  try{ renderSummary();   }catch(e){ console.error('renderSummary',e); }
+  try{ renderFixed();     }catch(e){ console.error('renderFixed',e); }
+  try{ renderCats();      }catch(e){ console.error('renderCats',e); }
+  try{ renderHistory();   }catch(e){ console.error('renderHistory',e); }
 }
 
-function renderSetupBanner(){
-  const el = document.getElementById('setup-banner');
-  const steps = document.getElementById('banner-steps');
-  const hasIncome = income>0;
-  const hasLoan   = FIXED_ITEMS.filter(f=>f.type==='expense').some(f=>(fixedData[f.id]||0)>0);
-
-  if(hasIncome && hasLoan){ el.style.display='none'; return; }
-  el.style.display='block';
-
-  steps.innerHTML = [
-    {label:'給料を入力', done:hasIncome},
-    {label:'ローンを入力', done:hasLoan},
-  ].map((s,i)=>{
-    const cls = s.done?'banner-step done':(!hasIncome&&i===0)||( hasIncome&&!hasLoan&&i===1)?'banner-step active':'banner-step';
-    return `<div class="${cls}">${s.done?'✓ ':''} ${s.label}</div>`;
-  }).join('');
-}
 
 function renderDailyCard(){
   const dc  = document.getElementById('daily-card');
@@ -610,9 +587,9 @@ function submitExp(){
   monthData.entries.push({cat:catId,amount,memo:document.getElementById('exp-memo').value.trim(),ts:Date.now()});
   saveMonth(curMonth,monthData);
   closeExp();
+  showToast('✅ 追加しました（'+yen(amount)+'）');
   setTimeout(()=>{
     renderAll();
-    // renderAll後にボタンを探して光らせる（innerHTML再生成後）
     requestAnimationFrame(()=>{
       const btn = document.querySelector(`[onclick="openExp('${catId}')"]`);
       if(btn){
@@ -649,6 +626,7 @@ function submitFixed(){
   else{fixedData[activeFixedId]=val;saveFixed(fixedData);}
   closeFixed();
   renderAll();
+  showToast('✅ 保存しました（'+yen(val)+'）');
 }
 
 // ══════════════════════════════════════
