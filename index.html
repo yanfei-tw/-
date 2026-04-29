@@ -143,7 +143,7 @@ header h1{font-size:20px;font-weight:700}
 <body>
 
 <header>
-  <h1>📒 かけいぼ</h1>
+  <h1>📒 かけいぼ <span style="font-size:11px;opacity:.5;font-weight:400">v2.2</span></h1>
   <div class="month-nav">
     <button id="prev-month">‹</button>
     <span id="month-label"></span>
@@ -713,7 +713,29 @@ function bindEvents(){
 // ══════════════════════════════════════
 // 初期化
 // ══════════════════════════════════════
+function checkStorage(){
+  try{
+    localStorage.setItem('_test','1');
+    if(localStorage.getItem('_test')!=='1') throw new Error();
+    localStorage.removeItem('_test');
+    return true;
+  }catch(e){ return false; }
+}
+
 function init(){
+  if(!checkStorage()){
+    document.body.innerHTML=`<div style="padding:40px 24px;text-align:center;font-family:sans-serif">
+      <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:12px">このブラウザでは保存できません</div>
+      <div style="font-size:14px;color:#666;line-height:1.7;margin-bottom:24px">
+        LINEやアプリ内ブラウザでは<br>データが保存されません。<br><br>
+        <strong>SafariまたはChromeで開いてください</strong><br>
+        （右上の「…」→「ブラウザで開く」）
+      </div>
+      <div style="font-size:13px;color:#999">URL: https://yanfei-tw.github.io/-/</div>
+    </div>`;
+    return;
+  }
   curMonth  = todayMonth();
   monthData = loadMonth(curMonth);
   fixedData = loadFixed();
