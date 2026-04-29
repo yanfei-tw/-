@@ -120,6 +120,8 @@ header h1{font-size:20px;font-weight:700}
 .modal-overlay.open{display:flex}
 .modal-box{background:#fff;width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:10px 20px 52px;animation:slideUp .25s ease}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes flashGreen{0%{background:#d4edda}50%{background:#a8d5b5}100%{background:inherit}}
+.cat-btn.flashed{animation:flashGreen .6s ease}
 .modal-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:14px auto 20px}
 .modal-title{font-size:20px;font-weight:700;text-align:center;margin-bottom:4px}
 .modal-sub{font-size:13px;color:var(--sub);text-align:center;margin-bottom:20px}
@@ -128,6 +130,8 @@ header h1{font-size:20px;font-weight:700}
 .modal-unit{font-size:20px;color:var(--sub);margin-left:8px;flex-shrink:0}
 .modal-memo{width:100%;border:1.5px solid #eee;border-radius:12px;padding:13px 16px;font-size:16px;margin-bottom:16px;outline:none;font-family:inherit;transition:border-color .2s}
 .modal-memo:focus{border-color:var(--dark)}
+.modal-preview{font-size:13px;text-align:center;margin:-6px 0 14px;color:var(--sub);min-height:18px;transition:color .2s}
+.modal-preview.has-val{color:var(--green);font-weight:600}
 .modal-btns{display:flex;gap:10px}
 .btn-cancel{flex:1;padding:16px;background:#f0f0f0;border:none;border-radius:14px;font-size:16px;color:var(--sub);cursor:pointer;font-weight:600}
 .btn-ok{flex:2;padding:16px;background:var(--dark);border:none;border-radius:14px;font-size:16px;color:#fff;font-weight:700;cursor:pointer;transition:opacity .15s}
@@ -232,9 +236,10 @@ header h1{font-size:20px;font-weight:700}
     <div class="modal-title" id="exp-title"></div>
     <div class="modal-sub" id="exp-sub"></div>
     <div class="modal-amount-wrap" onclick="document.getElementById('exp-input').focus()">
-      <input class="modal-amount-input" type="tel" id="exp-input" placeholder="0" inputmode="numeric">
+      <input class="modal-amount-input" type="tel" id="exp-input" placeholder="0" inputmode="numeric" oninput="updateExpPreview()">
       <span class="modal-unit">円</span>
     </div>
+    <div class="modal-preview" id="exp-preview"></div>
     <input type="text" class="modal-memo" id="exp-memo" placeholder="メモ（任意）例：スーパー、コンビニ">
     <div class="modal-btns">
       <button class="btn-cancel" id="exp-cancel">キャンセル</button>
@@ -578,18 +583,45 @@ function openExp(catId){
   document.getElementById('exp-sub').textContent   = `今月の合計: ${yen(total)}`;
   document.getElementById('exp-input').value = '';
   document.getElementById('exp-memo').value  = '';
+  document.getElementById('exp-preview').textContent = '';
+  document.getElementById('exp-preview').className = 'modal-preview';
   document.getElementById('exp-ok').className = cat.bonus?'btn-ok orange-ok':'btn-ok';
   document.getElementById('exp-modal').classList.add('open');
   setTimeout(()=>document.getElementById('exp-input').focus(),180);
+}
+function updateExpPreview(){
+  const cat   = CATEGORIES.find(c=>c.id===activeExpCat);
+  const now   = monthData.entries.filter(e=>e.cat===activeExpCat).reduce((s,e)=>s+e.amount,0);
+  const add   = parseAmt(document.getElementById('exp-input').value);
+  const prev  = document.getElementById('exp-preview');
+  if(add>0){
+    prev.textContent = `追加後の合計: ${yen(now+add)}`;
+    prev.className   = 'modal-preview has-val';
+  } else {
+    prev.textContent = '';
+    prev.className   = 'modal-preview';
+  }
 }
 const closeExp = () => document.getElementById('exp-modal').classList.remove('open');
 function submitExp(){
   const amount = parseAmt(document.getElementById('exp-input').value);
   if(!amount) return;
-  monthData.entries.push({cat:activeExpCat,amount,memo:document.getElementById('exp-memo').value.trim(),ts:Date.now()});
+  const catId = activeExpCat;
+  monthData.entries.push({cat:catId,amount,memo:document.getElementById('exp-memo').value.trim(),ts:Date.now()});
   saveMonth(curMonth,monthData);
   closeExp();
-  renderAll();
+  setTimeout(()=>{
+    renderAll();
+    // renderAll後にボタンを探して光らせる（innerHTML再生成後）
+    requestAnimationFrame(()=>{
+      const btn = document.querySelector(`[onclick="openExp('${catId}')"]`);
+      if(btn){
+        btn.classList.add('flashed');
+        btn.scrollIntoView({behavior:'smooth',block:'nearest'});
+        setTimeout(()=>btn.classList.remove('flashed'), 700);
+      }
+    });
+  }, 80);
 }
 
 // ══════════════════════════════════════
