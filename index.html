@@ -230,7 +230,7 @@ header h1{font-size:20px;font-weight:700}
 <button id="reset-btn">今月の生活費をリセット</button>
 
 <!-- 支出入力モーダル -->
-<div class="modal-overlay" id="exp-modal">
+<div class="modal-overlay" id="exp-modal" onclick="if(event.target===this)closeExp()">
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-title" id="exp-title"></div>
@@ -242,14 +242,14 @@ header h1{font-size:20px;font-weight:700}
     <div class="modal-preview" id="exp-preview"></div>
     <input type="text" class="modal-memo" id="exp-memo" placeholder="メモ（任意）例：スーパー、コンビニ">
     <div class="modal-btns">
-      <button class="btn-cancel" id="exp-cancel">キャンセル</button>
-      <button class="btn-ok" id="exp-ok">追加する</button>
+      <button class="btn-cancel" id="exp-cancel" onclick="closeExp()">キャンセル</button>
+      <button class="btn-ok" id="exp-ok" onclick="submitExp()">追加する</button>
     </div>
   </div>
 </div>
 
 <!-- 固定費設定モーダル -->
-<div class="modal-overlay" id="fixed-modal">
+<div class="modal-overlay" id="fixed-modal" onclick="if(event.target===this)closeFixed()">
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-title" id="fixed-title"></div>
@@ -259,14 +259,14 @@ header h1{font-size:20px;font-weight:700}
       <span class="modal-unit">円</span>
     </div>
     <div class="modal-btns">
-      <button class="btn-cancel" id="fixed-cancel">キャンセル</button>
-      <button class="btn-ok green-ok" id="fixed-ok">保存する</button>
+      <button class="btn-cancel" id="fixed-cancel" onclick="closeFixed()">キャンセル</button>
+      <button class="btn-ok green-ok" id="fixed-ok" onclick="submitFixed()">保存する</button>
     </div>
   </div>
 </div>
 
 <!-- ボーナスモーダル -->
-<div class="modal-overlay" id="bonus-modal">
+<div class="modal-overlay" id="bonus-modal" onclick="if(event.target===this)closeBonusModal()">
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-title">🎉 ボーナス収入</div>
@@ -276,8 +276,8 @@ header h1{font-size:20px;font-weight:700}
       <span class="modal-unit">円</span>
     </div>
     <div class="modal-btns">
-      <button class="btn-cancel" id="bonus-cancel">キャンセル</button>
-      <button class="btn-ok orange-ok" id="bonus-ok">保存する</button>
+      <button class="btn-cancel" id="bonus-cancel" onclick="closeBonusModal()">キャンセル</button>
+      <button class="btn-ok orange-ok" id="bonus-ok" onclick="submitBonus()">保存する</button>
     </div>
   </div>
 </div>
@@ -672,19 +672,9 @@ function submitBonus(){
 // イベント
 // ══════════════════════════════════════
 function bindEvents(){
-  document.getElementById('exp-cancel').onclick=closeExp;
-  document.getElementById('exp-ok').onclick=submitExp;
-  document.getElementById('exp-modal').onclick=e=>{if(e.target===e.currentTarget)closeExp()};
+  // Enterキーでも確定できるようにする
   document.getElementById('exp-input').onkeydown=e=>{if(e.key==='Enter')submitExp()};
-
-  document.getElementById('fixed-cancel').onclick=closeFixed;
-  document.getElementById('fixed-ok').onclick=submitFixed;
-  document.getElementById('fixed-modal').onclick=e=>{if(e.target===e.currentTarget)closeFixed()};
   document.getElementById('fixed-input').onkeydown=e=>{if(e.key==='Enter')submitFixed()};
-
-  document.getElementById('bonus-cancel').onclick=closeBonusModal;
-  document.getElementById('bonus-ok').onclick=submitBonus;
-  document.getElementById('bonus-modal').onclick=e=>{if(e.target===e.currentTarget)closeBonusModal()};
   document.getElementById('bonus-input').onkeydown=e=>{if(e.key==='Enter')submitBonus()};
 
   document.getElementById('prev-month').onclick=()=>{
