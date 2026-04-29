@@ -136,7 +136,7 @@ header h1{font-size:20px;font-weight:700}
 <body>
 
 <header>
-  <h1>📒 かけいぼ <span style="font-size:11px;opacity:.5;font-weight:400">v2.3</span></h1>
+  <h1>📒 かけいぼ <span style="font-size:11px;opacity:.5;font-weight:400">v2.4</span></h1>
   <div class="month-nav">
     <button id="prev-month">‹</button>
     <span id="month-label"></span>
@@ -213,6 +213,10 @@ header h1{font-size:20px;font-weight:700}
 <div class="sec-label">今月の記録</div>
 <div class="card-list" id="history-list"></div>
 
+<div style="margin:18px 14px 0;display:flex;gap:8px">
+  <button id="backup-btn" style="flex:1;padding:13px;background:#fff;border:1.5px solid var(--dark);color:var(--dark);border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer">📥 バックアップ</button>
+  <button id="restore-btn" style="flex:1;padding:13px;background:#fff;border:1.5px solid var(--dark);color:var(--dark);border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer">📤 復元</button>
+</div>
 <button id="reset-btn">今月の生活費をリセット</button>
 
 <!-- 支出入力モーダル -->
@@ -324,6 +328,7 @@ const todayMonth = () => {const d=new Date();return `${d.getFullYear()}-${String
 const monthLabel = m => {const[y,mo]=m.split('-');return `${y}年${parseInt(mo)}月`};
 const yen = n => (n<0?'-':'')+'¥'+Math.abs(n).toLocaleString();
 const parseAmt = s => parseInt((s||'').replace(/[^0-9]/g,'')||'0',10)||0;
+const esc = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp = (v,mn,mx) => Math.min(mx,Math.max(mn,v));
 const isCurrent = () => curMonth===todayMonth();
 
@@ -528,7 +533,7 @@ function renderHistory(){
     return `<div class="history-row">
       <span class="h-icon">${cat.icon}</span>
       <div class="h-info">
-        <div class="h-name">${cat.name}${e.memo?' · '+e.memo:''}</div>
+        <div class="h-name">${esc(cat.name)}${e.memo?' · '+esc(e.memo):''}</div>
         <div class="h-date">${ds}</div>
       </div>
       <span class="h-amount${cat.bonus?' bonus':''}">${yen(e.amount)}</span>
@@ -675,6 +680,53 @@ function bindEvents(){
     monthData.entries=[];
     saveMonth(curMonth,monthData);
     renderAll();
+  };
+
+  document.getElementById('backup-btn').onclick=()=>{
+    const data={};
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith('kb3_')) data[k]=localStorage.getItem(k);
+    }
+    const json=JSON.stringify(data);
+    const blob=new Blob([json],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`kakeibo_backup_${todayMonth()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ バックアップを保存しました');
+  };
+
+  document.getElementById('restore-btn').onclick=()=>{
+    const input=document.createElement('input');
+    input.type='file';
+    input.accept='.json,application/json';
+    input.onchange=e=>{
+      const f=e.target.files[0];
+      if(!f) return;
+      const r=new FileReader();
+      r.onload=ev=>{
+        try{
+          const data=JSON.parse(ev.target.result);
+          if(!confirm('現在のデータを上書きします。よろしいですか？'))return;
+          for(const k in data){
+            if(k.startsWith('kb3_')) localStorage.setItem(k,data[k]);
+          }
+          curMonth  = todayMonth();
+          monthData = loadMonth(curMonth);
+          fixedData = loadFixed();
+          income    = loadIncome();
+          renderAll();
+          showToast('✅ 復元しました');
+        }catch(err){
+          alert('ファイルが読み込めませんでした');
+        }
+      };
+      r.readAsText(f);
+    };
+    input.click();
   };
 }
 
